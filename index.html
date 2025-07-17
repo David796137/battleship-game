@@ -2,208 +2,81 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Batalla Naval Avanzada</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Visualización de Barcos Realistas</title>
   <style>
-    body { font-family: sans-serif; text-align: center; background: #002244; color: white; }
-    h1 { margin-top: 10px; }
-    #game { display: flex; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
-    .board { display: grid; grid-template-columns: repeat(10, 30px); gap: 2px; margin: 10px; }
-    .cell {
-      width: 30px; height: 30px;
-      background: #66aaff;
-      border: 1px solid #003366;
-      cursor: pointer;
+    body {
+      font-family: Arial, sans-serif;
+      background: #0d1b2a;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px;
     }
-    .cell.hit { background: red; }
-    .cell.miss { background: gray; }
-    .cell.ship { background: #444; }
-    #controls { margin-top: 20px; }
-    button { padding: 10px 15px; margin: 5px; }
-    #instructions, #guide { background: #011; padding: 10px; border-radius: 10px; margin: 20px auto; width: 80%; }
+    h1 {
+      color: #00b4d8;
+    }
+    .ship-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .ship {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .segment {
+      width: 40px;
+      height: 40px;
+      background: url('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Ship_icon.svg/48px-Ship_icon.svg.png') center center no-repeat;
+      background-size: contain;
+      border: 1px solid #ccc;
+    }
+    .name {
+      min-width: 120px;
+      font-weight: bold;
+      color: #caf0f8;
+    }
   </style>
 </head>
 <body>
-  <h1>Batalla Naval Avanzada</h1>
-  <div id="instructions">
-    <h2>Instrucciones</h2>
-    <p>Dispara a las celdas del tablero enemigo. Usa misiles básicos o de área. Gana al hundir los 5 barcos enemigos.</p>
-  </div>
-  <div id="game">
-    <div>
-      <h3>Jugador</h3>
-      <div id="playerBoard" class="board"></div>
+  <h1>Barcos Realistas</h1>
+  <div class="ship-container">
+    <div class="ship">
+      <div class="name">🚢 Portaaviones</div>
+      <div class="segment"></div>
+      <div class="segment"></div>
+      <div class="segment"></div>
+      <div class="segment"></div>
+      <div class="segment"></div>
     </div>
-    <div>
-      <h3>IA</h3>
-      <div id="aiBoard" class="board"></div>
+    <div class="ship">
+      <div class="name">⚓ Bataya</div>
+      <div class="segment"></div>
+      <div class="segment"></div>
+      <div class="segment"></div>
+      <div class="segment"></div>
+    </div>
+    <div class="ship">
+      <div class="name">🛥️ Submarino</div>
+      <div class="segment"></div>
+      <div class="segment"></div>
+      <div class="segment"></div>
+    </div>
+    <div class="ship">
+      <div class="name">🔱 Alpha 15</div>
+      <div class="segment"></div>
+      <div class="segment"></div>
+      <div class="segment"></div>
+    </div>
+    <div class="ship">
+      <div class="name">🚤 Destructor</div>
+      <div class="segment"></div>
+      <div class="segment"></div>
     </div>
   </div>
-  <div id="controls">
-    <button onclick="resetGame()">🔁 Reiniciar</button>
-    <label>
-      Tipo de misil:
-      <select id="missileType">
-        <option value="basic">Básico</option>
-        <option value="area">Área (3x3)</option>
-      </select>
-    </label>
-  </div>
-  <div id="guide">
-    <h2>Guía Avanzada</h2>
-    <p>Elige misiles sabiamente. El de área cubre más pero es limitado. ¡Usa estrategia!</p>
-  </div>
-  <audio id="hitSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
-  <audio id="missSound" src="https://www.soundjay.com/button/beep-10.wav"></audio>
-  <script>
-    const playerBoard = document.getElementById('playerBoard');
-    const aiBoard = document.getElementById('aiBoard');
-    const missileType = document.getElementById('missileType');
-    const hitSound = document.getElementById('hitSound');
-    const missSound = document.getElementById('missSound');
-
-    const SIZE = 10;
-    const NUM_SHIPS = 5;
-
-    let playerGrid = [];
-    let aiGrid = [];
-    let aiShips = [];
-    let gameOver = false;
-
-    function createGrid() {
-      playerGrid = Array(SIZE).fill().map(() => Array(SIZE).fill(''));
-      aiGrid = Array(SIZE).fill().map(() => Array(SIZE).fill(''));
-      placeShips(playerGrid, false);  // mostrar barcos del jugador
-      aiShips = placeShips(aiGrid, true);  // ocultar barcos de la IA
-      drawBoards();
-      saveGame();
-    }
-
-    function placeShips(grid, hidden) {
-      let ships = [];
-      for (let i = 0; i < NUM_SHIPS; i++) {
-        let placed = false;
-        while (!placed) {
-          let x = Math.floor(Math.random() * SIZE);
-          let y = Math.floor(Math.random() * SIZE);
-          if (grid[y][x] === '') {
-            grid[y][x] = 'S';
-            ships.push({ x, y, hit: false });
-            placed = true;
-          }
-        }
-      }
-      return ships;
-    }
-
-    function drawBoards() {
-      playerBoard.innerHTML = '';
-      aiBoard.innerHTML = '';
-      for (let y = 0; y < SIZE; y++) {
-        for (let x = 0; x < SIZE; x++) {
-          const pCell = document.createElement('div');
-          const aCell = document.createElement('div');
-          pCell.className = 'cell';
-          aCell.className = 'cell';
-          if (playerGrid[y][x] === 'S') pCell.classList.add('ship');
-          if (playerGrid[y][x] === 'H') pCell.classList.add('hit');
-          if (playerGrid[y][x] === 'M') pCell.classList.add('miss');
-          if (aiGrid[y][x] === 'H') aCell.classList.add('hit');
-          if (aiGrid[y][x] === 'M') aCell.classList.add('miss');
-
-          aCell.onclick = () => fireAt(x, y);
-
-          playerBoard.appendChild(pCell);
-          aiBoard.appendChild(aCell);
-        }
-      }
-    }
-
-    function fireAt(x, y) {
-      if (gameOver) return;
-
-      let type = missileType.value;
-      if (type === 'basic') {
-        attackCell(x, y);
-      } else if (type === 'area') {
-        for (let dy = -1; dy <= 1; dy++) {
-          for (let dx = -1; dx <= 1; dx++) {
-            let nx = x + dx, ny = y + dy;
-            if (nx >= 0 && ny >= 0 && nx < SIZE && ny < SIZE) {
-              attackCell(nx, ny);
-            }
-          }
-        }
-      }
-
-      setTimeout(aiTurn, 500);
-      saveGame();
-    }
-
-    function attackCell(x, y) {
-      if (aiGrid[y][x] === 'S') {
-        aiGrid[y][x] = 'H';
-        hitSound.play();
-      } else if (aiGrid[y][x] === '') {
-        aiGrid[y][x] = 'M';
-        missSound.play();
-      }
-      drawBoards();
-      checkWin();
-    }
-
-    function aiTurn() {
-      let x, y;
-      do {
-        x = Math.floor(Math.random() * SIZE);
-        y = Math.floor(Math.random() * SIZE);
-      } while (playerGrid[y][x] === 'H' || playerGrid[y][x] === 'M');
-
-      if (playerGrid[y][x] === 'S') {
-        playerGrid[y][x] = 'H';
-      } else {
-        playerGrid[y][x] = 'M';
-      }
-      drawBoards();
-      checkWin();
-    }
-
-    function checkWin() {
-      let aiHits = aiGrid.flat().filter(c => c === 'H').length;
-      let playerHits = playerGrid.flat().filter(c => c === 'H').length;
-      if (aiHits >= NUM_SHIPS) {
-        alert('¡Ganaste!');
-        gameOver = true;
-      } else if (playerHits >= NUM_SHIPS) {
-        alert('Perdiste contra la IA.');
-        gameOver = true;
-      }
-    }
-
-    function resetGame() {
-      localStorage.removeItem('battleship');
-      gameOver = false;
-      createGrid();
-    }
-
-    function saveGame() {
-      const data = { playerGrid, aiGrid, gameOver };
-      localStorage.setItem('battleship', JSON.stringify(data));
-    }
-
-    function loadGame() {
-      const saved = localStorage.getItem('battleship');
-      if (saved) {
-        const data = JSON.parse(saved);
-        playerGrid = data.playerGrid;
-        aiGrid = data.aiGrid;
-        gameOver = data.gameOver;
-        drawBoards();
-      } else {
-        createGrid();
-      }
-    }
-
-    loadGame();
-  </script>
 </body>
 </html>
